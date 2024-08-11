@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from interactions import Client, Intents, slash_command, SlashContext, OptionType
+from datetime import datetime
 import asyncio
 import db_manager
 
@@ -67,7 +68,7 @@ async def pr(ctx: SlashContext, event: str, pr_value: str):
 
     # Retrieve and post the leaderboard
     leaderboard = db.get_event_leaderboard(event)
-    leaderboard_message = "\n".join([f"{i+1}. {entry[0]} - {entry[1]}" for i, entry in enumerate(leaderboard)])
+    leaderboard_message = "\n".join([f"{i+1}. <@<{entry[0]}>> - {entry[1]}" for i, entry in enumerate(leaderboard)])
     await ctx.send(f"**{event} Leaderboard:**\n{leaderboard_message}")
 
 # Progress Command
@@ -93,8 +94,9 @@ async def progress(ctx: SlashContext, event: str):
 
     prs = db.get_user_prs(str(ctx.author.id), event)
     if prs:
-        progress_message = "\n".join([f"{pr[1]}: {pr[0]}" for pr in prs])
-        await ctx.send(f"**Your Progress in {event}:**\n{progress_message}", ephemeral=True)
+        # Format the progress message to show date with hour and minute only
+        formatted_progress = "\n".join([f"{pr_value} at {datetime.strptime(pr_date, '%Y-%m-%d %H:%M:%S.%f').strftime('%Y-%m-%d %H:%M')}" for pr_value, pr_date in prs])
+        await ctx.send(f"**Your Progress in {event}:**\n{formatted_progress}", ephemeral=True)
     else:
         await ctx.send(f"You have no PRs recorded for {event}.", ephemeral=True)
 
@@ -118,7 +120,7 @@ async def leaderboard(ctx: SlashContext, event: str):
 
     leaderboard = db.get_event_leaderboard(event)
     if leaderboard:
-        leaderboard_message = "\n".join([f"{i+1}. {entry[0]} - {entry[1]}" for i, entry in enumerate(leaderboard)])
+        leaderboard_message = "\n".join([f"{i+1}. <{entry[0]}> - {entry[1]}" for i, entry in enumerate(leaderboard)])
         await ctx.send(f"**{event} Leaderboard:**\n{leaderboard_message}")
     else:
         await ctx.send(f"No PRs recorded for {event} yet.", ephemeral=True)
@@ -130,7 +132,7 @@ async def leaderboard(ctx: SlashContext, event: str):
 )
 async def best(ctx: SlashContext):
     overall_leaderboard = db.get_overall_leaderboard()
-    leaderboard_message = "\n".join([f"{i+1}. {entry[0]} - {entry[1]} top ranks" for i, entry in enumerate(overall_leaderboard)])
+    leaderboard_message = "\n".join([f"{i+1}. <{entry[0]}> - {entry[1]} top ranks" for i, entry in enumerate(overall_leaderboard)])
     await ctx.send(f"**Overall Leaderboard:**\n{leaderboard_message}")
     
 bot.start(os.getenv("DISCORD_BOT_TOKEN"))

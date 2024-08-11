@@ -62,15 +62,29 @@ class DatabaseManager:
         return self.cursor.fetchall()
 
     def get_event_leaderboard(self, event):
-        self.cursor.execute('''
-            SELECT users.username, prs.pr_value, MAX(prs.date) as most_recent_date
-            FROM prs 
-            JOIN users ON prs.discord_id = users.discord_id 
-            WHERE prs.event = ? 
-            GROUP BY prs.discord_id 
-            ORDER BY prs.pr_value DESC, most_recent_date ASC
-        ''', (event,))
+        timed_events = ["2 Mile Run", "5 Mile Run"]
+
+        if event in timed_events:
+            self.cursor.execute('''
+                SELECT users.username, prs.pr_value, prs.discord_id, MAX(prs.date) as most_recent_date
+                FROM prs 
+                JOIN users ON prs.discord_id = users.discord_id 
+                WHERE prs.event = ? 
+                GROUP BY prs.discord_id 
+                ORDER BY CAST(prs.pr_value AS REAL) ASC, most_recent_date ASC
+            ''', (event,))
+        else:
+            self.cursor.execute('''
+                SELECT users.username, prs.pr_value, prs.discord_id, MAX(prs.date) as most_recent_date
+                FROM prs 
+                JOIN users ON prs.discord_id = users.discord_id 
+                WHERE prs.event = ? 
+                GROUP BY prs.discord_id 
+                ORDER BY CAST(prs.pr_value AS REAL) DESC, most_recent_date ASC
+            ''', (event,))
+    
         return self.cursor.fetchall()
+
 
 
     def close(self):
