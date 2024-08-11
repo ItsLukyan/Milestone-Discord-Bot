@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from interactions import Client, Intents, slash_command, SlashContext, OptionType
+from interactions import Client, Intents, slash_command, SlashContext, OptionType, AutocompleteContext
 from datetime import datetime
 import asyncio
 import db_manager
@@ -10,9 +10,6 @@ load_dotenv()  # Load environment variables from the .env file
 bot = Client(intents=Intents.DEFAULT)
 # intents are what events we want to receive from discord, `DEFAULT` is usually fine
 
-# Initialize the database
-db = db_manager.DatabaseManager()
-
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.me.name}')
@@ -20,6 +17,21 @@ async def on_ready():
 @bot.event
 async def on_shutdown():
     db.close()
+
+# Initialize the database
+db = db_manager.DatabaseManager()
+
+# Event list for static choices autocomplete
+events = [
+    "2 Mile Run", 
+    "5 Mile Run", 
+    "Hand Release Push-Ups", 
+    "Strict Dead-Hang Pull-Ups", 
+    "Plank", 
+    "Squat 1RM", 
+    "Bench 1RM", 
+    "Deadlift 1RM"
+]
 
 # Register Command
 @slash_command(
@@ -38,6 +50,41 @@ async def register(ctx: SlashContext):
 
 # Add PR Command
 @slash_command(
+    name="pr",
+    description="Add a new PR",
+    options=[
+        {
+            "name": "event",
+            "description": "The event for which you're adding a PR",
+            "type": OptionType.STRING,
+            "required": True,
+            "choices": [{"name": event, "value": event} for event in events]  # Static choices for autocomplete
+        },
+        {
+            "name": "pr_value",
+            "description": "Your PR value",
+            "type": OptionType.STRING,
+            "required": True
+        },
+    ]
+)
+async def pr(ctx: SlashContext, event: str, pr_value: str):
+    if not db.get_user(ctx.author.id):
+        await ctx.send("You need to register first using /register.", ephemeral=True)
+        return
+    if not db.get_event(event):
+        await ctx.send(f"{event} is not a valid event.", ephemeral=True)
+        return
+    
+    db.add_pr(str(ctx.author.id), event, pr_value)
+    await ctx.send(f"Your PR for {event} has been updated!", ephemeral=True)
+
+    # Retrieve and post the leaderboard
+    leaderboard = db.get_event_leaderboard(event)
+    leaderboard_message = "\n".join([f"{i+1}. <@{entry[2]}> - {entry[1]}" for i, entry in enumerate(leaderboard)])
+    await ctx.send(f"**{event} Leaderboard:**\n{leaderboard_message}")
+    
+"""@slash_command(
     name="pr",
     description="Add a new PR",
     options=[
@@ -68,7 +115,7 @@ async def pr(ctx: SlashContext, event: str, pr_value: str):
 
     # Retrieve and post the leaderboard
     leaderboard = db.get_event_leaderboard(event)
-    leaderboard_message = "\n".join([f"{i+1}. <@<{entry[0]}>> - {entry[1]}" for i, entry in enumerate(leaderboard)])
+    leaderboard_message = "\n".join([f"{i+1}. <@<{entry[2]}>> - {entry[1]}" for i, entry in enumerate(leaderboard)])
     await ctx.send(f"**{event} Leaderboard:**\n{leaderboard_message}")
 
 # Progress Command
@@ -98,7 +145,7 @@ async def progress(ctx: SlashContext, event: str):
         formatted_progress = "\n".join([f"{pr_value} at {datetime.strptime(pr_date, '%Y-%m-%d %H:%M:%S.%f').strftime('%Y-%m-%d %H:%M')}" for pr_value, pr_date in prs])
         await ctx.send(f"**Your Progress in {event}:**\n{formatted_progress}", ephemeral=True)
     else:
-        await ctx.send(f"You have no PRs recorded for {event}.", ephemeral=True)
+        await ctx.send(f"You have no PRs recorded for {event}.", ephemeral=True)"""
 
 # Leaderboard Command
 @slash_command(
