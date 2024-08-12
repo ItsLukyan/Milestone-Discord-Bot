@@ -84,40 +84,6 @@ async def pr(ctx: SlashContext, event: str, pr_value: str):
     leaderboard_message = "\n".join([f"{i+1}. <@{entry[2]}> - {entry[1]}" for i, entry in enumerate(leaderboard)])
     await ctx.send(f"**{event} Leaderboard:**\n{leaderboard_message}")
     
-"""@slash_command(
-    name="pr",
-    description="Add a new PR",
-    options=[
-        {
-            "name": "event",
-            "description": "The event for which you're adding a PR",
-            "type": OptionType.STRING,
-            "required": True,
-        },
-        {
-            "name": "pr_value",
-            "description": "Your PR value",
-            "type": OptionType.STRING,
-            "required": True,
-        },
-    ]
-)
-async def pr(ctx: SlashContext, event: str, pr_value: str):
-    if not db.get_user(ctx.author.id):
-        await ctx.send("You need to register first using /register.", ephemeral=True)
-        return
-    if not db.get_event(event):
-        await ctx.send(f"{event} is not a valid event.", ephemeral=True)
-        return
-    
-    db.add_pr(str(ctx.author.id), event, pr_value)
-    await ctx.send(f"Your PR for {event} has been updated!", ephemeral=True)
-
-    # Retrieve and post the leaderboard
-    leaderboard = db.get_event_leaderboard(event)
-    leaderboard_message = "\n".join([f"{i+1}. <@<{entry[2]}>> - {entry[1]}" for i, entry in enumerate(leaderboard)])
-    await ctx.send(f"**{event} Leaderboard:**\n{leaderboard_message}")
-
 # Progress Command
 @slash_command(
     name="progress",
@@ -145,7 +111,7 @@ async def progress(ctx: SlashContext, event: str):
         formatted_progress = "\n".join([f"{pr_value} at {datetime.strptime(pr_date, '%Y-%m-%d %H:%M:%S.%f').strftime('%Y-%m-%d %H:%M')}" for pr_value, pr_date in prs])
         await ctx.send(f"**Your Progress in {event}:**\n{formatted_progress}", ephemeral=True)
     else:
-        await ctx.send(f"You have no PRs recorded for {event}.", ephemeral=True)"""
+        await ctx.send(f"You have no PRs recorded for {event}.", ephemeral=True)
 
 # Leaderboard Command
 @slash_command(
